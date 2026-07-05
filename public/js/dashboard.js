@@ -12,49 +12,6 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/gif",
 ]);
 
-// HARUS tetap sinkron dengan `BOOK_GENRES` di `src/routes/books-validation.js`.
-const GENRE_OPTIONS = [
-  { value: "action", label: "Action" },
-  { value: "adventure", label: "Adventure" },
-  { value: "comedy", label: "Comedy" },
-  { value: "demons", label: "Demons" },
-  { value: "drama", label: "Drama" },
-  { value: "fantasy", label: "Fantasy" },
-  { value: "game", label: "Game" },
-  { value: "gore", label: "Gore" },
-  { value: "harem", label: "Harem" },
-  { value: "historical", label: "Historical" },
-  { value: "horror", label: "Horror" },
-  { value: "isekai", label: "Isekai" },
-  { value: "josei", label: "Josei" },
-  { value: "magic", label: "Magic" },
-  { value: "martial_arts", label: "Martial Arts" },
-  { value: "mature", label: "Mature" },
-  { value: "mecha", label: "Mecha" },
-  { value: "military", label: "Military" },
-  { value: "music", label: "Music" },
-  { value: "mystery", label: "Mystery" },
-  { value: "parody", label: "Parody" },
-  { value: "psychological", label: "Psychological" },
-  { value: "romance", label: "Romance" },
-  { value: "school", label: "School" },
-  { value: "sci_fi", label: "Sci-Fi" },
-  { value: "seinen", label: "Seinen" },
-  { value: "shoujo", label: "Shoujo" },
-  { value: "shounen", label: "Shounen" },
-  { value: "slice_of_life", label: "Slice of Life" },
-  { value: "sports", label: "Sports" },
-  { value: "supernatural", label: "Supernatural" },
-  { value: "thriller", label: "Thriller" },
-  { value: "vampire", label: "Vampire" },
-];
-
-const STATUS_LABELS = {
-  to_read: "Segera",
-  reading: "Berjalan",
-  completed: "Selesai",
-};
-
 const ROLE_LABELS = {
   super_admin: "Super Admin",
   admin: "Admin",
@@ -138,6 +95,11 @@ const {
   parseJsonResponse,
   buildAuthHeaders,
   showFeedback,
+  GENRE_OPTIONS,
+  STATUS_LABELS,
+  getGenreText,
+  getStatusLabel,
+  getReaderUrl,
 } = window.MangakuCore;
 
 function renderImageWithFallback(src, alt, fallbackLabel) {
@@ -502,18 +464,6 @@ function getMangaDetailUrl(book) {
   return `/manga/${encodeURIComponent(book.slug)}`;
 }
 
-function getReaderUrl(book, chapterNumber) {
-  if (!book?.slug || !chapterNumber) {
-    return null;
-  }
-
-  return `/read/manga/${encodeURIComponent(book.slug)}/${chapterNumber}/`;
-}
-
-function getFirstReadableUrl(book) {
-  return getMangaDetailUrl(book);
-}
-
 function truncateSynopsis(text, maxWords = 120) {
   const words = String(text || "")
     .trim()
@@ -529,22 +479,6 @@ function truncateSynopsis(text, maxWords = 120) {
 
 function getSelectedBookSummary() {
   return state.books.find((book) => book.id === state.selectedBookId) || null;
-}
-
-function getStatusLabel(status) {
-  return STATUS_LABELS[String(status || "reading")] || "Berjalan";
-}
-
-function getGenreText(book) {
-  return Array.isArray(book?.genres) && book.genres.length > 0
-    ? book.genres
-        .map(
-          (genre) =>
-            GENRE_OPTIONS.find((option) => option.value === genre)?.label ||
-            genre,
-        )
-        .join(", ")
-    : "General";
 }
 
 function getChapterCount(book) {
@@ -609,24 +543,14 @@ function renderMangaGrid(containerId, books, options = {}) {
         const ratingCount = Number(book.ratingCount || 0);
         const userRating = Number(book.userRating || 0);
 
-        // Build star icons for display
         const displayRating = userRating > 0 ? userRating : avgRating;
-        const starsHtml = [1, 2, 3, 4, 5]
-          .map((n) => {
-            if (n <= Math.floor(displayRating)) {
-              return `<i class="bi bi-star-fill" data-star="${n}"></i>`;
-            } else if (n - 0.5 <= displayRating) {
-              return `<i class="bi bi-star-half" data-star="${n}"></i>`;
-            } else {
-              return `<i class="bi bi-star" data-star="${n}"></i>`;
-            }
-          })
-          .join("");
-
-        const ratingLabel = userRating > 0
-          ? `${userRating}/5`
+        const ratingBadgeText = displayRating > 0
+          ? displayRating.toFixed(1)
+          : "-";
+        const ratingBadgeTitle = userRating > 0
+          ? `Rating kamu: ${userRating}/5 \u2022 Rata-rata: ${avgRating.toFixed(1)} (${ratingCount})`
           : avgRating > 0
-            ? `${avgRating.toFixed(1)} (${ratingCount})`
+            ? `Rata-rata: ${avgRating.toFixed(1)}/5 (${ratingCount} vote)`
             : "Belum dirating";
 
         return `
@@ -639,6 +563,7 @@ function renderMangaGrid(containerId, books, options = {}) {
               `Cover ${book.title}`,
               "Manga",
             )}
+            <span class="manga-card-rating-badge" title="${ratingBadgeTitle}">${ratingBadgeText}</span>
             <span class="manga-status-badge manga-status-badge--${book.status || "reading"}">${getStatusLabel(book.status)}</span>
             <div class="manga-card-copy">
               <h3>${escapeHtml(book.title)}</h3>
@@ -649,122 +574,11 @@ function renderMangaGrid(containerId, books, options = {}) {
               </div>
             </div>
           </div>
-          <div class="manga-card-rating" data-book-id="${book.id}">
-            <div class="card-rating-stars" data-book-id="${book.id}">
-              ${starsHtml}
-            </div>
-            <span class="card-rating-label">${ratingLabel}</span>
-          </div>
         </article>
       `;
       })
     .join("");
 
-  // Attach rating star events
-  attachCardRatingEvents(container);
-}
-
-function attachCardRatingEvents(container) {
-  const ratingGroups = container.querySelectorAll(".card-rating-stars");
-
-  ratingGroups.forEach((group) => {
-    const bookId = Number(group.dataset.bookId);
-    const stars = group.querySelectorAll("i[data-star]");
-    const card = group.closest(".manga-card");
-    const labelEl = card?.querySelector(".card-rating-label");
-    const book = state.books.find((b) => b.id === bookId);
-    const currentUserRating = Number(book?.userRating || 0);
-
-    function updateStarDisplay(rating, isHover = false) {
-      stars.forEach((star) => {
-        const val = Number(star.dataset.star);
-        star.className = "bi bi-star";
-        if (val <= rating) {
-          star.className = isHover ? "bi bi-star-fill hover-preview" : "bi bi-star-fill active";
-        }
-      });
-    }
-
-    // Set initial state
-    if (currentUserRating > 0) {
-      updateStarDisplay(currentUserRating, false);
-    }
-
-    stars.forEach((star) => {
-      star.addEventListener("mouseenter", () => {
-        const val = Number(star.dataset.star);
-        updateStarDisplay(val, true);
-        if (labelEl) labelEl.textContent = `${val}/5`;
-      });
-
-      star.addEventListener("mouseleave", () => {
-        const book = state.books.find((b) => b.id === bookId);
-        const ur = Number(book?.userRating || 0);
-        const ar = Number(book?.averageRating || 0);
-        const rc = Number(book?.ratingCount || 0);
-        if (ur > 0) {
-          updateStarDisplay(ur, false);
-          if (labelEl) labelEl.textContent = `${ur}/5`;
-        } else {
-          // Restore display based on average
-          stars.forEach((s) => {
-            const v = Number(s.dataset.star);
-            s.className = "bi bi-star";
-            if (v <= Math.floor(ar)) s.className = "bi bi-star-fill";
-            else if (v - 0.5 <= ar) s.className = "bi bi-star-half";
-          });
-          if (labelEl) labelEl.textContent = ar > 0 ? `${ar.toFixed(1)} (${rc})` : "Belum dirating";
-        }
-      });
-
-      star.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const val = Number(star.dataset.star);
-
-        // Optimistic update
-        if (book) {
-          book.userRating = val;
-        }
-        updateStarDisplay(val, false);
-        if (labelEl) labelEl.textContent = `${val}/5`;
-
-        // Submit to API
-        try {
-          if (bookId) {
-            await window.MangakuApi.post(`/api/books/${bookId}/rate`, {
-              rating: val,
-            });
-            // Refresh book data to get updated average
-            const result = await window.MangakuApi.get(`/api/books/${bookId}`);
-            if (result.data) {
-              Object.assign(book, result.data);
-              // Update label with new average
-              const newAvg = Number(result.data.averageRating || 0);
-              const newCount = Number(result.data.ratingCount || 0);
-              if (labelEl) {
-                labelEl.textContent = `${val}/5 · ${newAvg.toFixed(1)} (${newCount})`;
-              }
-            }
-          }
-        } catch {
-          // Revert on failure
-          if (book) {
-            book.userRating = 0;
-          }
-          const ar = Number(book?.averageRating || 0);
-          const rc = Number(book?.ratingCount || 0);
-          stars.forEach((s) => {
-            const v = Number(s.dataset.star);
-            s.className = "bi bi-star";
-            if (v <= Math.floor(ar)) s.className = "bi bi-star-fill";
-            else if (v - 0.5 <= ar) s.className = "bi bi-star-half";
-          });
-          if (labelEl) labelEl.textContent = ar > 0 ? `${ar.toFixed(1)} (${rc})` : "Belum dirating";
-        }
-      });
-    });
-  });
 }
 
 function buildChapterRow(chapter, options = {}) {
@@ -1058,11 +872,7 @@ function renderActivityLogs() {
 }
 
 async function deleteAllLogs() {
-  try {
-    await requestJson("DELETE", LOGS_ENDPOINT);
-  } catch (error) {
-    throw error;
-  }
+  await requestJson("DELETE", LOGS_ENDPOINT);
 }
 
 function renderEditFormFromSelectedBook() {

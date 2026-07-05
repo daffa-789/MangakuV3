@@ -36,6 +36,41 @@ import {
 
 const router = express.Router();
 
+// Shared book SELECT columns with chapter/rating/favorite joins
+const BOOK_SELECT_SQL = `SELECT b.id,
+            b.title,
+            b.slug,
+            b.author,
+            b.genre,
+            b.thumbnail_url AS thumbnailUrl,
+            b.description,
+            b.published_on AS publishedOn,
+            b.status,
+            b.updated_at AS updatedAt,
+            COALESCE(cs.chapterCount, 0) AS chapterCount,
+            cs.firstChapterNumber,
+            COALESCE(rating_stats.averageRating, 0) AS averageRating,
+            COALESCE(rating_stats.ratingCount, 0) AS ratingCount,
+            CASE WHEN uf.user_id IS NULL THEN 0 ELSE 1 END AS isFavorite`;
+
+const BOOK_JOINS_SQL = `LEFT JOIN (
+       SELECT book_id,
+              COUNT(*) AS chapterCount,
+              MIN(chapter_number) AS firstChapterNumber
+       FROM chapters
+       GROUP BY book_id
+     ) cs ON cs.book_id = b.id
+     LEFT JOIN (
+       SELECT c.book_id,
+              ROUND(AVG(cr.rating), 1) AS averageRating,
+              COUNT(cr.id) AS ratingCount
+       FROM chapter_ratings cr
+       JOIN chapters c ON c.id = cr.chapter_id
+       GROUP BY c.book_id
+     ) rating_stats ON rating_stats.book_id = b.id
+     LEFT JOIN user_favorites uf
+       ON uf.book_id = b.id AND uf.user_id = ?`;
+
 // Cache configuration
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const PAGINATION_DEFAULT_LIMIT = 12;
@@ -457,47 +492,15 @@ async function fetchBooksWithPagination(
   const totalBooks = countRows[0]?.total || 0;
   const totalPages = Math.ceil(totalBooks / safeLimit);
 
-  // Get paginated books — hanya field yang dipakai UI (chapterCount, firstChapterNumber).
-  // Subquery favoriteCount/reading_sessions & kolom displayOrder/createdBy*/panelCount
-  // sudah dihapus agar query lebih ringan (lihat AUDIT 4.8 & 6.5).
+  // Get paginated books using shared SQL fragments
   const [rows] = await connection.query(
-    `SELECT b.id,
-            b.title,
-            b.slug,
-            b.author,
-            b.genre,
-            b.thumbnail_url AS thumbnailUrl,
-            b.description,
-            b.published_on AS publishedOn,
-            b.status,
-            b.updated_at AS updatedAt,
-            COALESCE(cs.chapterCount, 0) AS chapterCount,
-            cs.firstChapterNumber,
-            COALESCE(rating_stats.averageRating, 0) AS averageRating,
-            COALESCE(rating_stats.ratingCount, 0) AS ratingCount,
-            CASE WHEN uf.user_id IS NULL THEN 0 ELSE 1 END AS isFavorite
+    `${BOOK_SELECT_SQL}
      FROM books b
-     LEFT JOIN (
-       SELECT book_id,
-              COUNT(*) AS chapterCount,
-              MIN(chapter_number) AS firstChapterNumber
-       FROM chapters
-       GROUP BY book_id
-     ) cs ON cs.book_id = b.id
-     LEFT JOIN (
-       SELECT c.book_id,
-              ROUND(AVG(cr.rating), 1) AS averageRating,
-              COUNT(cr.id) AS ratingCount
-       FROM chapter_ratings cr
-       JOIN chapters c ON c.id = cr.chapter_id
-       GROUP BY c.book_id
-     ) rating_stats ON rating_stats.book_id = b.id
-     LEFT JOIN user_favorites uf
-       ON uf.book_id = b.id AND uf.user_id = ?
+     ${BOOK_JOINS_SQL}
      ${favoriteClause}
      ORDER BY b.updated_at DESC, b.id DESC
      LIMIT ? OFFSET ?`,
-    [currentUserId, safeLimit, offset],
+    [currentUserId, currentUserId, safeLimit, offset],
   );
 
   const books = rows.map(mapBookRow);
@@ -528,42 +531,12 @@ async function fetchBooksWithPagination(
 
 async function fetchBookById(connection, currentUserId, bookId) {
   const [rows] = await connection.query(
-    `SELECT b.id,
-            b.title,
-            b.slug,
-            b.author,
-            b.genre,
-            b.thumbnail_url AS thumbnailUrl,
-            b.description,
-            b.published_on AS publishedOn,
-            b.status,
-            b.updated_at AS updatedAt,
-            COALESCE(cs.chapterCount, 0) AS chapterCount,
-            cs.firstChapterNumber,
-            COALESCE(rating_stats.averageRating, 0) AS averageRating,
-            COALESCE(rating_stats.ratingCount, 0) AS ratingCount,
-            CASE WHEN uf.user_id IS NULL THEN 0 ELSE 1 END AS isFavorite
+    `${BOOK_SELECT_SQL}
      FROM books b
-     LEFT JOIN (
-       SELECT book_id,
-              COUNT(*) AS chapterCount,
-              MIN(chapter_number) AS firstChapterNumber
-       FROM chapters
-       GROUP BY book_id
-     ) cs ON cs.book_id = b.id
-     LEFT JOIN (
-       SELECT c.book_id,
-              ROUND(AVG(cr.rating), 1) AS averageRating,
-              COUNT(cr.id) AS ratingCount
-       FROM chapter_ratings cr
-       JOIN chapters c ON c.id = cr.chapter_id
-       GROUP BY c.book_id
-     ) rating_stats ON rating_stats.book_id = b.id
-     LEFT JOIN user_favorites uf
-       ON uf.book_id = b.id AND uf.user_id = ?
+     ${BOOK_JOINS_SQL}
      WHERE b.id = ?
      LIMIT 1`,
-    [currentUserId, bookId],
+    [currentUserId, currentUserId, bookId],
   );
 
   if (!rows[0]) {

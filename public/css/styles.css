@@ -1856,60 +1856,21 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   box-shadow: 0 0 0 2px var(--accent-orange), 0 8px 25px rgba(255, 103, 64, 0.2);
 }
 
-/* === Card Rating Section (below cover) === */
-.manga-card-rating {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.625rem 0.5rem 0.75rem;
-  background: var(--dark-surface);
-}
-
-.card-rating-stars {
-  display: flex;
-  gap: 0.2rem;
-}
-
-.card-rating-stars i {
-  font-size: 0.875rem;
-  color: var(--gray-600);
-  cursor: pointer;
-  transition: color var(--transition-fast), transform var(--transition-fast);
-  line-height: 1;
-}
-
-.card-rating-stars i:hover {
-  transform: scale(1.2);
-}
-
-.card-rating-stars i.active {
-  color: #fbbf24;
-}
-
-.card-rating-stars i.hover-preview {
-  color: rgba(251, 191, 36, 0.5);
-}
-
-.card-rating-stars i.bi-star-fill.active {
-  color: #fbbf24;
-  filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.3));
-}
-
-.card-rating-stars i.bi-star-half {
-  color: #fbbf24;
-}
-
-.card-rating-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: var(--gray-500);
-  line-height: 1;
-  transition: color var(--transition-fast);
-}
-
-.manga-card-rating:hover .card-rating-label {
-  color: var(--gray-300);
+/* === Rating Badge on Manga Cards === */
+.manga-card-rating-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  color: white;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 
@@ -2724,18 +2685,6 @@ label.field-grid > span {
   .manga-card-overlay .button-row {
     padding: 0;
     gap: 0.375rem;
-  }
-
-  .manga-card-rating {
-    padding: 0.5rem 0.375rem 0.625rem;
-  }
-
-  .card-rating-stars i {
-    font-size: 0.75rem;
-  }
-
-  .card-rating-label {
-    font-size: 0.625rem;
   }
 
   .primary-button.small,

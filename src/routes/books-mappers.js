@@ -1,4 +1,4 @@
-import { parseGenreList } from './books-validation.js';
+import { normalizeGenreList } from './books-validation.js';
 import { addCacheBuster } from '../utils/url.js';
 
 function mapBookRow(row = {}) {
@@ -10,7 +10,7 @@ function mapBookRow(row = {}) {
     title: row.title,
     slug: row.slug,
     author: row.author,
-    genres: parseGenreList(row.genre),
+    genres: normalizeGenreList(row.genre),
     thumbnailUrl: row.thumbnailUrl ? addCacheBuster(row.thumbnailUrl, row.updatedAt || row.id) : null,
     description: row.description || '',
     publishedOn: row.publishedOn || null,

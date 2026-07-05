@@ -57,9 +57,6 @@ function serializeGenreList(genres = []) {
   return normalizeGenreList(genres).join(',');
 }
 
-function parseGenreList(value) {
-  return normalizeGenreList(value);
-}
 
 function normalizeBookPayload(body = {}) {
   const payload = {};
@@ -175,7 +172,6 @@ export {
   normalizeBoolean,
   normalizeGenreList,
   serializeGenreList,
-  parseGenreList,
   normalizeBookPayload,
   validateBookPayload,
   normalizeChapterPayload,

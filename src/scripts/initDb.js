@@ -13,7 +13,6 @@ const BOOTSTRAP_SUPER_ADMIN_EMAILS = [
     String(
       process.env.BOOTSTRAP_SUPER_ADMIN_EMAILS ||
         process.env.BOOTSTRAP_ADMIN_EMAILS ||
-        process.env.ROLE_MANAGER_EMAILS ||
         "admin@mangaku.local",
     )
       .split(",")

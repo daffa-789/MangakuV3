@@ -1,54 +1,16 @@
-const STATUS_LABELS = {
-  reading: "Berjalan",
-  completed: "Selesai",
-  to_read: "Rencana",
-};
-
-const GENRE_OPTIONS = [
-  { value: "action", label: "Action" },
-  { value: "adventure", label: "Adventure" },
-  { value: "comedy", label: "Comedy" },
-  { value: "drama", label: "Drama" },
-  { value: "fantasy", label: "Fantasy" },
-  { value: "horror", label: "Horror" },
-  { value: "mystery", label: "Mystery" },
-  { value: "romance", label: "Romance" },
-  { value: "sci-fi", label: "Sci-Fi" },
-  { value: "slice-of-life", label: "Slice of Life" },
-  { value: "sports", label: "Sports" },
-  { value: "supernatural", label: "Supernatural" },
-  { value: "thriller", label: "Thriller" },
-  { value: "parody", label: "Parody" },
-  { value: "general", label: "General" },
-];
-
 const state = {
   book: null,
   synopsisExpanded: false,
 };
 
-const { escapeHtml, formatDate, renderImageWithFallback } = window.MangakuCore;
-
-function parseSlugFromPath() {
-  const match = window.location.pathname.match(/^\/manga\/([^/]+)\/?$/i);
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function getGenreText(book) {
-  return Array.isArray(book?.genres) && book.genres.length > 0
-    ? book.genres
-        .map(
-          (genre) =>
-            GENRE_OPTIONS.find((option) => option.value === genre)?.label ||
-            genre,
-        )
-        .join(", ")
-    : "General";
-}
-
-function getStatusLabel(status) {
-  return STATUS_LABELS[String(status || "reading")] || "Berjalan";
-}
+const {
+  escapeHtml,
+  formatDate,
+  renderImageWithFallback,
+  GENRE_OPTIONS,
+  getStatusLabel,
+  getReaderUrl,
+} = window.MangakuCore;
 
 function getStatusClass(status) {
   const map = {
@@ -59,12 +21,9 @@ function getStatusClass(status) {
   return map[String(status || "reading")] || "status-reading";
 }
 
-function getReaderUrl(book, chapterNumber) {
-  if (!book?.slug || !chapterNumber) {
-    return null;
-  }
-
-  return `/read/manga/${encodeURIComponent(book.slug)}/${chapterNumber}/`;
+function parseSlugFromPath() {
+  const match = window.location.pathname.match(/^\/manga\/([^/]+)\/?$/i);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 
