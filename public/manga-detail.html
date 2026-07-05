@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detail Manga | Mangaku</title>
+    <link
+      rel="stylesheet"
+      href="/node_modules/bootstrap-icons/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="/node_modules/sweetalert2/dist/sweetalert2.min.css" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="/node_modules/sweetalert2/dist/sweetalert2.all.min.js" defer></script>
+    <script src="/js/core.js" defer></script>
+    <script src="/js/Api.js" defer></script>
+    <script src="/js/session.js" defer></script>
+    <script src="/js/alerts.js" defer></script>
+    <script src="/js/auth.js" defer></script>
+    <script src="/js/manga-detail.js" defer></script>
+  </head>
+  <body class="manga-detail-page">
+    <header class="manga-detail-topbar">
+      <a href="/home.html" class="secondary-button small" aria-label="Kembali">
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        Kembali
+      </a>
+    </header>
+
+    <div id="mangaDetailBanner" class="manga-detail-banner" hidden></div>
+
+    <main class="manga-detail-main">
+      <section id="mangaDetailContent" class="manga-detail-content">
+        <div class="empty-state">
+          <i class="bi bi-hourglass-split"></i>
+          <p>Memuat detail manga...</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,227 @@
+import jwt from 'jsonwebtoken';
+
+const AUTH_TOKEN_EXPIRES_IN = process.env.AUTH_TOKEN_EXPIRES_IN || '12h';
+const AUTH_JWT_SECRET = process.env.AUTH_JWT_SECRET || 'dev-only-change-me';
+const ROLE_ORDER = {
+  user: 1,
+  admin: 2,
+  super_admin: 3,
+};
+
+function normalizeEmail(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeRole(value) {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+
+  return Object.prototype.hasOwnProperty.call(ROLE_ORDER, normalized)
+    ? normalized
+    : 'user';
+}
+
+function hasMinimumRole(userRole, minimumRole) {
+  return (
+    ROLE_ORDER[normalizeRole(userRole)] >=
+    ROLE_ORDER[normalizeRole(minimumRole)]
+  );
+}
+
+// Memvalidasi role mentah TANPA coercion (normalizeRole() memaksa invalid -> "user").
+// Dipakai untuk menolak input role yang tidak dikenal pada endpoint mutasi role.
+function isValidRole(value) {
+  return Object.prototype.hasOwnProperty.call(
+    ROLE_ORDER,
+    String(value || '')
+      .trim()
+      .toLowerCase(),
+  );
+}
+
+function createAuthToken(user) {
+  return jwt.sign(
+    {
+      sub: user.id,
+      email: normalizeEmail(user.email),
+      role: normalizeRole(user.role),
+    },
+    AUTH_JWT_SECRET,
+    {
+      expiresIn: AUTH_TOKEN_EXPIRES_IN,
+    },
+  );
+}
+
+function getBearerToken(req) {
+  const authorization = String(req.get('authorization') || '');
+
+  if (!authorization.toLowerCase().startsWith('bearer ')) {
+    return null;
+  }
+
+  const token = authorization.slice(7).trim();
+  return token || null;
+}
+
+function verifyBearerToken(req) {
+  const token = getBearerToken(req);
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = jwt.verify(token, AUTH_JWT_SECRET);
+    const userId = Number.parseInt(String(payload?.sub || ''), 10);
+    const email = normalizeEmail(payload?.email || '');
+
+    if (!Number.isInteger(userId) || userId <= 0 || !email) {
+      return null;
+    }
+
+    return {
+      userId,
+      email,
+      role: normalizeRole(payload?.role),
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function getRequestUserId(req) {
+  const verifiedToken = verifyBearerToken(req);
+
+  if (verifiedToken) {
+    return verifiedToken.userId;
+  }
+
+  const rawValue = req.get('x-user-id') || req.body?.userId || req.query.userId;
+  const userId = Number.parseInt(String(rawValue || ''), 10);
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return null;
+  }
+
+  return userId;
+}
+
+async function getUserById(connectionOrPool, userId) {
+  const [rows] = await connectionOrPool.query(
+    `SELECT id,
+            email,
+            role,
+            username,
+            display_name AS displayName,
+            birthday,
+            avatar_url AS avatarUrl,
+            bio,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+     FROM users
+     WHERE id = ?
+     LIMIT 1`,
+    [userId],
+  );
+
+  if (!rows[0]) {
+    return null;
+  }
+
+  return {
+    id: rows[0].id,
+    email: rows[0].email,
+    role: normalizeRole(rows[0].role),
+    username: rows[0].username || null,
+    displayName: rows[0].displayName || null,
+    birthday: rows[0].birthday || null,
+    avatarUrl: rows[0].avatarUrl || null,
+    bio: rows[0].bio || null,
+    createdAt: rows[0].createdAt || null,
+    updatedAt: rows[0].updatedAt || null,
+  };
+}
+
+async function resolveRequestUser(connectionOrPool, req, options = {}) {
+  const { requireToken = false } = options;
+  const verifiedToken = verifyBearerToken(req);
+
+  if (requireToken && !verifiedToken) {
+    return {
+      user: null,
+      error: {
+        status: 401,
+        message: 'Token login tidak valid. Silakan login ulang.',
+      },
+    };
+  }
+
+  const userId = verifiedToken?.userId || getRequestUserId(req);
+
+  if (!userId) {
+    return {
+      user: null,
+      error: {
+        status: 401,
+        message: 'User tidak valid. Silakan login ulang.',
+      },
+    };
+  }
+
+  const user = await getUserById(connectionOrPool, userId);
+
+  if (!user) {
+    return {
+      user: null,
+      error: {
+        status: 401,
+        message: 'User tidak ditemukan. Silakan login ulang.',
+      },
+    };
+  }
+
+  if (verifiedToken && normalizeEmail(user.email) !== verifiedToken.email) {
+    return {
+      user: null,
+      error: {
+        status: 401,
+        message: 'Token login tidak cocok dengan akun user.',
+      },
+    };
+  }
+
+  return {
+    user,
+    error: null,
+  };
+}
+
+function buildAuthUserPayload(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    role: normalizeRole(user.role),
+    username: user.username || null,
+    displayName: user.displayName || null,
+    birthday: user.birthday || null,
+    avatarUrl: user.avatarUrl || null,
+    bio: user.bio || null,
+    token: createAuthToken(user),
+  };
+}
+
+export {
+  normalizeEmail,
+  normalizeRole,
+  hasMinimumRole,
+  isValidRole,
+  createAuthToken,
+  getRequestUserId,
+  getUserById,
+  resolveRequestUser,
+  buildAuthUserPayload,
+};
