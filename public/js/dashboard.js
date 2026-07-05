@@ -605,52 +605,166 @@ function renderMangaGrid(containerId, books, options = {}) {
     .map(
       (book) => {
         const detailUrl = getMangaDetailUrl(book);
-        const synopsis = truncateSynopsis(book.description || "Sinopsis belum tersedia.");
-        const ratingBadge =
-          Number(book.ratingCount || 0) > 0
-            ? `<span class="manga-overlay-rating">
-                <i class="bi bi-star-fill" aria-hidden="true"></i>
-                ${Number(book.averageRating || 0).toFixed(1)}
-              </span>`
-            : "";
+        const avgRating = Number(book.averageRating || 0);
+        const ratingCount = Number(book.ratingCount || 0);
+        const userRating = Number(book.userRating || 0);
+
+        // Build star icons for display
+        const displayRating = userRating > 0 ? userRating : avgRating;
+        const starsHtml = [1, 2, 3, 4, 5]
+          .map((n) => {
+            if (n <= Math.floor(displayRating)) {
+              return `<i class="bi bi-star-fill" data-star="${n}"></i>`;
+            } else if (n - 0.5 <= displayRating) {
+              return `<i class="bi bi-star-half" data-star="${n}"></i>`;
+            } else {
+              return `<i class="bi bi-star" data-star="${n}"></i>`;
+            }
+          })
+          .join("");
+
+        const ratingLabel = userRating > 0
+          ? `${userRating}/5`
+          : avgRating > 0
+            ? `${avgRating.toFixed(1)} (${ratingCount})`
+            : "Belum dirating";
 
         return `
         <article class="manga-card ${
           state.selectedBookId === book.id ? "is-active" : ""
-        }">
+        }" data-book-id="${book.id}">
           <div class="manga-card-cover">
-            <span class="manga-status-badge manga-status-badge--${book.status || "reading"}">${getStatusLabel(book.status)}</span>
             ${renderImageWithFallback(
               book.thumbnailUrl,
               `Cover ${book.title}`,
               "Manga",
             )}
+            <span class="manga-status-badge manga-status-badge--${book.status || "reading"}">${getStatusLabel(book.status)}</span>
+            <div class="manga-card-copy">
+              <h3>${escapeHtml(book.title)}</h3>
+            </div>
             <div class="manga-card-overlay">
-              <p class="manga-card-synopsis">${escapeHtml(synopsis)}</p>
-              <div class="manga-card-overlay-meta">
-                <span>${escapeHtml(getGenreText(book))}</span>
-                ${ratingBadge}
+              <div class="button-row">
+                ${buildMangaCardActions(book, options)}
               </div>
-              ${
-                detailUrl
-                  ? `<a class="primary-button small manga-card-read" href="${detailUrl}">
-                      <i class="bi bi-book" aria-hidden="true"></i> Baca
-                    </a>`
-                  : ""
-              }
             </div>
           </div>
-          <div class="manga-card-copy">
-            <h3>${escapeHtml(book.title)}</h3>
-          </div>
-          <div class="button-row">
-            ${buildMangaCardActions(book, options)}
+          <div class="manga-card-rating" data-book-id="${book.id}">
+            <div class="card-rating-stars" data-book-id="${book.id}">
+              ${starsHtml}
+            </div>
+            <span class="card-rating-label">${ratingLabel}</span>
           </div>
         </article>
       `;
-      },
-    )
+      })
     .join("");
+
+  // Attach rating star events
+  attachCardRatingEvents(container);
+}
+
+function attachCardRatingEvents(container) {
+  const ratingGroups = container.querySelectorAll(".card-rating-stars");
+
+  ratingGroups.forEach((group) => {
+    const bookId = Number(group.dataset.bookId);
+    const stars = group.querySelectorAll("i[data-star]");
+    const card = group.closest(".manga-card");
+    const labelEl = card?.querySelector(".card-rating-label");
+    const book = state.books.find((b) => b.id === bookId);
+    const currentUserRating = Number(book?.userRating || 0);
+
+    function updateStarDisplay(rating, isHover = false) {
+      stars.forEach((star) => {
+        const val = Number(star.dataset.star);
+        star.className = "bi bi-star";
+        if (val <= rating) {
+          star.className = isHover ? "bi bi-star-fill hover-preview" : "bi bi-star-fill active";
+        }
+      });
+    }
+
+    // Set initial state
+    if (currentUserRating > 0) {
+      updateStarDisplay(currentUserRating, false);
+    }
+
+    stars.forEach((star) => {
+      star.addEventListener("mouseenter", () => {
+        const val = Number(star.dataset.star);
+        updateStarDisplay(val, true);
+        if (labelEl) labelEl.textContent = `${val}/5`;
+      });
+
+      star.addEventListener("mouseleave", () => {
+        const book = state.books.find((b) => b.id === bookId);
+        const ur = Number(book?.userRating || 0);
+        const ar = Number(book?.averageRating || 0);
+        const rc = Number(book?.ratingCount || 0);
+        if (ur > 0) {
+          updateStarDisplay(ur, false);
+          if (labelEl) labelEl.textContent = `${ur}/5`;
+        } else {
+          // Restore display based on average
+          stars.forEach((s) => {
+            const v = Number(s.dataset.star);
+            s.className = "bi bi-star";
+            if (v <= Math.floor(ar)) s.className = "bi bi-star-fill";
+            else if (v - 0.5 <= ar) s.className = "bi bi-star-half";
+          });
+          if (labelEl) labelEl.textContent = ar > 0 ? `${ar.toFixed(1)} (${rc})` : "Belum dirating";
+        }
+      });
+
+      star.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const val = Number(star.dataset.star);
+
+        // Optimistic update
+        if (book) {
+          book.userRating = val;
+        }
+        updateStarDisplay(val, false);
+        if (labelEl) labelEl.textContent = `${val}/5`;
+
+        // Submit to API
+        try {
+          if (bookId) {
+            await window.MangakuApi.post(`/api/books/${bookId}/rate`, {
+              rating: val,
+            });
+            // Refresh book data to get updated average
+            const result = await window.MangakuApi.get(`/api/books/${bookId}`);
+            if (result.data) {
+              Object.assign(book, result.data);
+              // Update label with new average
+              const newAvg = Number(result.data.averageRating || 0);
+              const newCount = Number(result.data.ratingCount || 0);
+              if (labelEl) {
+                labelEl.textContent = `${val}/5 · ${newAvg.toFixed(1)} (${newCount})`;
+              }
+            }
+          }
+        } catch {
+          // Revert on failure
+          if (book) {
+            book.userRating = 0;
+          }
+          const ar = Number(book?.averageRating || 0);
+          const rc = Number(book?.ratingCount || 0);
+          stars.forEach((s) => {
+            const v = Number(s.dataset.star);
+            s.className = "bi bi-star";
+            if (v <= Math.floor(ar)) s.className = "bi bi-star-fill";
+            else if (v - 0.5 <= ar) s.className = "bi bi-star-half";
+          });
+          if (labelEl) labelEl.textContent = ar > 0 ? `${ar.toFixed(1)} (${rc})` : "Belum dirating";
+        }
+      });
+    });
+  });
 }
 
 function buildChapterRow(chapter, options = {}) {

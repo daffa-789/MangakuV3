@@ -24,6 +24,7 @@ const GENRE_OPTIONS = [
 
 const state = {
   book: null,
+  synopsisExpanded: false,
 };
 
 const { escapeHtml, formatDate, renderImageWithFallback } = window.MangakuCore;
@@ -49,6 +50,15 @@ function getStatusLabel(status) {
   return STATUS_LABELS[String(status || "reading")] || "Berjalan";
 }
 
+function getStatusClass(status) {
+  const map = {
+    reading: "status-reading",
+    completed: "status-completed",
+    to_read: "status-to_read",
+  };
+  return map[String(status || "reading")] || "status-reading";
+}
+
 function getReaderUrl(book, chapterNumber) {
   if (!book?.slug || !chapterNumber) {
     return null;
@@ -57,15 +67,12 @@ function getReaderUrl(book, chapterNumber) {
   return `/read/manga/${encodeURIComponent(book.slug)}/${chapterNumber}/`;
 }
 
-function renderBanner(book) {
-  const banner = document.getElementById("mangaDetailBanner");
 
-  if (!banner || !book?.thumbnailUrl) {
-    return;
+function renderTopbarTitle(book) {
+  const el = document.getElementById("mangaDetailTopbarTitle");
+  if (el && book?.title) {
+    el.textContent = book.title;
   }
-
-  banner.hidden = false;
-  banner.style.backgroundImage = `url("${book.thumbnailUrl}")`;
 }
 
 function renderDetail(book) {
@@ -76,25 +83,62 @@ function renderDetail(book) {
   const readUrl = firstChapter
     ? getReaderUrl(book, firstChapter.chapterNumber)
     : null;
-  const ratingText =
-    Number(book.ratingCount || 0) > 0
-      ? `${Number(book.averageRating || 0).toFixed(1)} (${book.ratingCount} rating)`
-      : "Belum ada rating";
+  const avgRating = Number(book.averageRating || 0);
+  const ratingCount = Number(book.ratingCount || 0);
 
+  // Genre tags with color classes
+  const genreTagsHtml = (book.genres || [])
+    .map((genre) => {
+      const option = GENRE_OPTIONS.find((o) => o.value === genre);
+      const label = option?.label || genre;
+      const cssClass = option ? `genre-${option.value}` : "";
+      return `<span class="tag-chip ${cssClass}">${escapeHtml(label)}</span>`;
+    })
+    .join("");
+
+  // Status tag
+  const statusTag = `<span class="tag-chip tag-status ${getStatusClass(book.status)}">${escapeHtml(getStatusLabel(book.status))}</span>`;
+
+  // Stats
+  const statsHtml = `
+    <div class="stat-item">
+      <i class="bi bi-star-fill" style="color: #ffc107;"></i>
+      <span class="stat-value">${avgRating > 0 ? avgRating.toFixed(1) : "-"}</span>
+      <span class="stat-label">(${ratingCount} rating)</span>
+    </div>
+    <div class="stat-item">
+      <i class="bi bi-book" style="color: var(--accent-blue);"></i>
+      <span class="stat-value">${book.chapterCount || 0}</span>
+      <span class="stat-label">Chapter</span>
+    </div>
+    <div class="stat-item">
+      <i class="bi bi-calendar3" style="color: var(--accent-green);"></i>
+      <span class="stat-value">${escapeHtml(formatDate(book.publishedOn))}</span>
+    </div>
+  `;
+
+  // Chapters list
   const chaptersHtml = (book.chapters || [])
     .map((chapter) => {
       const chapterUrl = getReaderUrl(book, chapter.chapterNumber);
+      const pageCount = Number(chapter.pageCount || 0);
       return chapterUrl
         ? `<a class="manga-detail-chapter-link" href="${chapterUrl}">
-            Chapter ${chapter.chapterNumber}
-            <span>${Number(chapter.pageCount || 0)} halaman</span>
+            <span class="chapter-title">Ch. ${chapter.chapterNumber}</span>
+            <span class="chapter-meta">${pageCount} hal</span>
+            <span class="chapter-date">${escapeHtml(formatDate(chapter.createdAt))}</span>
           </a>`
         : `<span class="manga-detail-chapter-link is-disabled">
-            Chapter ${chapter.chapterNumber}
-            <span>Belum tersedia</span>
+            <span class="chapter-title">Ch. ${chapter.chapterNumber}</span>
+            <span class="chapter-meta">Belum tersedia</span>
+            <span class="chapter-date"></span>
           </span>`;
     })
     .join("");
+
+  // Synopsis - check if long enough for toggle
+  const description = book.description || "Sinopsis belum tersedia.";
+  const isLongSynopsis = description.length > 200;
 
   container.innerHTML = `
     <div class="manga-detail-hero">
@@ -102,31 +146,23 @@ function renderDetail(book) {
         ${renderImageWithFallback(book.thumbnailUrl, `Cover ${book.title}`, "Manga")}
       </div>
       <div class="manga-detail-info">
-        <p class="eyebrow">Detail Manga</p>
         <h1>${escapeHtml(book.title)}</h1>
-        <p class="manga-detail-author">${escapeHtml(book.author || "-")}</p>
+        <p class="manga-detail-author">
+          <i class="bi bi-person-fill"></i>
+          ${escapeHtml(book.author || "Unknown Author")}
+        </p>
         <div class="manga-detail-tags">
-          <span class="tag-chip">${escapeHtml(getStatusLabel(book.status))}</span>
-          ${(book.genres || [])
-            .map(
-              (genre) =>
-                `<span class="tag-chip">${escapeHtml(
-                  GENRE_OPTIONS.find((option) => option.value === genre)?.label ||
-                    genre,
-                )}</span>`,
-            )
-            .join("")}
+          ${statusTag}
+          ${genreTagsHtml}
         </div>
         <div class="manga-detail-stats">
-          <span><i class="bi bi-star-fill"></i> ${ratingText}</span>
-          <span><i class="bi bi-journal-text"></i> ${book.chapterCount || 0} chapter</span>
-          <span><i class="bi bi-calendar3"></i> ${escapeHtml(formatDate(book.publishedOn))}</span>
+          ${statsHtml}
         </div>
         <div class="button-row manga-detail-actions">
           ${
             readUrl
               ? `<a class="primary-button" href="${readUrl}">
-                  <i class="bi bi-book" aria-hidden="true"></i> Baca
+                  <i class="bi bi-book" aria-hidden="true"></i> Baca Sekarang
                 </a>`
               : `<button type="button" class="secondary-button" disabled>Belum Ada Chapter</button>`
           }
@@ -137,27 +173,41 @@ function renderDetail(book) {
             data-book-id="${book.id}"
             data-is-favorite="${book.isFavorite ? "true" : "false"}">
             <i class="bi bi-heart${book.isFavorite ? "-fill" : ""}" aria-hidden="true"></i>
-            ${book.isFavorite ? "Hapus Favorit" : "Tambah Favorit"}
+            ${book.isFavorite ? "Favorit" : "Favorit"}
           </button>
         </div>
       </div>
     </div>
 
     <section class="manga-detail-synopsis">
-      <h2>Sinopsis</h2>
-      <p>${escapeHtml(book.description || "Sinopsis belum tersedia.")}</p>
+      <h2><i class="bi bi-file-text"></i> Sinopsis</h2>
+      <div class="synopsis-text ${isLongSynopsis && !state.synopsisExpanded ? "collapsed" : "expanded"}">
+        <p>${escapeHtml(description)}</p>
+      </div>
+      ${
+        isLongSynopsis
+          ? `<button type="button" class="synopsis-toggle" id="synopsisToggle">
+              <span>${state.synopsisExpanded ? "Tutup" : "Baca selengkapnya"}</span>
+              <i class="bi bi-chevron-${state.synopsisExpanded ? "up" : "down"}"></i>
+            </button>`
+          : ""
+      }
     </section>
 
     <section class="manga-detail-chapters">
-      <h2>Daftar Chapter</h2>
+      <h2>
+        <i class="bi bi-list-ul"></i> Daftar Chapter
+        <span class="chapter-count">${book.chapters?.length || 0} chapter</span>
+      </h2>
       <div class="manga-detail-chapter-list">
         ${chaptersHtml || '<p class="empty-state">Belum ada chapter.</p>'}
       </div>
     </section>
   `;
 
-  renderBanner(book);
+  renderTopbarTitle(book);
   attachFavoriteButton();
+  attachSynopsisToggle();
 }
 
 function attachFavoriteButton() {
@@ -195,6 +245,27 @@ function attachFavoriteButton() {
     }
   });
 }
+
+function attachSynopsisToggle() {
+  const toggle = document.getElementById("synopsisToggle");
+  if (!toggle || toggle.dataset.bound === "true") {
+    return;
+  }
+  toggle.dataset.bound = "true";
+
+  toggle.addEventListener("click", () => {
+    state.synopsisExpanded = !state.synopsisExpanded;
+    const textEl = document.querySelector(".synopsis-text");
+    if (textEl) {
+      textEl.className = `synopsis-text ${state.synopsisExpanded ? "expanded" : "collapsed"}`;
+    }
+    const label = toggle.querySelector("span");
+    const icon = toggle.querySelector("i");
+    if (label) label.textContent = state.synopsisExpanded ? "Tutup" : "Baca selengkapnya";
+    if (icon) icon.className = `bi bi-chevron-${state.synopsisExpanded ? "up" : "down"}`;
+  });
+}
+
 
 function renderNotFound(message) {
   const container = document.getElementById("mangaDetailContent");
