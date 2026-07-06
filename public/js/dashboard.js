@@ -1202,7 +1202,7 @@ async function handleAddMangaSubmit(event) {
     clearInterval(progressInterval);
     hideUploadProgress(formEl);
     resetAddMangaForm();
-    await refreshDashboard({ preferredBookId: result.data.id });
+    await refreshDashboard({ preferredBookId: result.data?.id });
     setActiveTab("edit-manga");
     showFeedback("Manga berhasil ditambahkan.", "success");
   } catch (error) {

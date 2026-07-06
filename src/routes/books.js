@@ -438,6 +438,15 @@ function invalidateUserBooksCache(userId) {
   cache.invalidatePattern(`books:${userId}:.*`);
 }
 
+/**
+ * Invalidate ALL book-related caches across every user.
+ * Called when a book is created, updated, or deleted because the book
+ * catalog is shared — any user's paginated list may now be stale.
+ */
+function invalidateAllBooksCache() {
+  cache.invalidatePattern(`^books:`);
+}
+
 // ============ Pagination Helper Functions ============
 function parsePositiveIntegerParam(value, defaultValue = 1, maxValue = 100) {
   const num = Number.parseInt(String(value || ""), 10);
@@ -500,7 +509,7 @@ async function fetchBooksWithPagination(
      ${favoriteClause}
      ORDER BY b.updated_at DESC, b.id DESC
      LIMIT ? OFFSET ?`,
-    [currentUserId, currentUserId, safeLimit, offset],
+    [currentUserId, safeLimit, offset],
   );
 
   const books = rows.map(mapBookRow);
@@ -530,14 +539,14 @@ async function fetchBooksWithPagination(
 }
 
 async function fetchBookById(connection, currentUserId, bookId) {
-  const [rows] = await connection.query(
-    `${BOOK_SELECT_SQL}
-     FROM books b
-     ${BOOK_JOINS_SQL}
-     WHERE b.id = ?
-     LIMIT 1`,
-    [currentUserId, currentUserId, bookId],
-  );
+    const [rows] = await connection.query(
+      `${BOOK_SELECT_SQL}
+       FROM books b
+       ${BOOK_JOINS_SQL}
+       WHERE b.id = ?
+       LIMIT 1`,
+      [currentUserId, bookId],
+    );
 
   if (!rows[0]) {
     return null;
@@ -660,6 +669,24 @@ router.get("/", async (req, res) => {
       page,
       limit,
     });
+
+    // Safety check: if cache returned stale data (total > 0 but no books),
+    // invalidate and retry without cache.
+    if (result.books.length === 0 && result.pagination.total > 0) {
+      invalidateAllBooksCache();
+      const retryResult = await fetchBooksWithPagination(pool, req.user.id, {
+        favoritesOnly: false,
+        page,
+        limit,
+        useCache: false,
+      });
+      return res.status(200).json({
+        status: "success",
+        message: "Daftar manga berhasil dimuat.",
+        data: retryResult.books,
+        pagination: retryResult.pagination,
+      });
+    }
 
     return res.status(200).json({
       status: "success",
@@ -861,7 +888,7 @@ router.post("/", async (req, res) => {
 
     await connection.commit();
 
-    invalidateUserBooksCache(req.user.id);
+    invalidateAllBooksCache();
 
     const book = await fetchBookById(pool, req.user.id, result.insertId);
 
@@ -1032,7 +1059,7 @@ router.post("/:id/chapters", async (req, res) => {
         );
 
         await connection.commit();
-        invalidateUserBooksCache(req.user.id);
+        invalidateAllBooksCache();
         const chapter = await fetchChapterById(
           pool,
           bookId,
@@ -1208,7 +1235,7 @@ router.put("/:id/chapters/:chapterId", async (req, res) => {
         );
 
         await connection.commit();
-        invalidateUserBooksCache(req.user.id);
+        invalidateAllBooksCache();
         deleteManagedFiles(pagePlan.removedUrls);
 
         const chapter = await fetchChapterById(pool, bookId, chapterId);
@@ -1276,7 +1303,7 @@ router.delete("/:id/chapters/:chapterId", async (req, res) => {
     );
 
     await connection.commit();
-    invalidateUserBooksCache(req.user.id);
+    invalidateAllBooksCache();
     deleteManagedFiles(pageRows.map((row) => row.imageUrl));
 
     return successResponse(res, "Chapter berhasil dihapus.");
@@ -1634,7 +1661,7 @@ router.put("/:id", async (req, res) => {
 
     await connection.commit();
 
-    invalidateUserBooksCache(req.user.id);
+    invalidateAllBooksCache();
 
     const book = await fetchBookById(connection, req.user.id, bookId);
 
@@ -1711,7 +1738,7 @@ router.delete("/:id", async (req, res) => {
       fs.rmSync(mangaFolderPath, { recursive: true, force: true });
     }
 
-    invalidateUserBooksCache(req.user.id);
+    invalidateAllBooksCache();
 
     return successResponse(res, "Manga berhasil dihapus.");
   } catch (error) {

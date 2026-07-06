@@ -26,13 +26,11 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 
   /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -196,14 +194,10 @@ img {
   cursor: pointer;
 }
 
-/* Password toggle eye icons */
 .auth-password-toggle i {
   font-size: 1.125rem;
 }
 
-.auth-password-toggle .hidden {
-  display: none;
-}
 .auth-password-toggle:hover {
   background: var(--gray-100);
   color: var(--gray-700);
@@ -505,6 +499,10 @@ body.dashboard-page {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
 }
 
+.manga-card.is-active {
+  box-shadow: 0 0 0 2px var(--accent-orange), 0 8px 25px rgba(255, 103, 64, 0.2);
+}
+
 .manga-card-cover {
   position: relative;
   padding-top: 140%;
@@ -595,22 +593,6 @@ body.dashboard-page {
   pointer-events: auto;
 }
 
-.manga-card-overlay-meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  font-size: 0.6875rem;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.manga-overlay-rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: var(--accent-orange);
-}
-
 /* Button-row inside hover overlay */
 .manga-card-overlay .button-row {
   display: flex;
@@ -624,6 +606,51 @@ body.dashboard-page {
   font-size: 0.8125rem;
   border-radius: 8px;
 }
+
+/* Rating Badge on Manga Cards */
+.manga-card-rating-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  color: white;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Status Badges on Manga Cards */
+.manga-status-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  color: white;
+  z-index: 2;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.manga-status-badge--completed {
+  background: var(--accent-green);
+}
+
+.manga-status-badge--reading {
+  background: var(--accent-blue);
+}
+
+.manga-status-badge--to_read {
+  background: var(--accent-orange);
+}
+
 /* === Manga Detail Page === */
 .manga-detail-page {
   min-height: 100vh;
@@ -803,8 +830,6 @@ body.dashboard-page {
   color: var(--gray-500);
 }
 
-/* Rating Stars - removed from detail page, now on card */
-
 /* Action Buttons - MangaDex Style */
 .manga-detail-actions {
   display: flex;
@@ -880,7 +905,6 @@ body.dashboard-page {
 .manga-detail-synopsis .synopsis-toggle:hover {
   color: var(--accent-orange);
 }
-
 
 /* Chapters Section - MangaDex Style */
 .manga-detail-chapters {
@@ -1024,10 +1048,10 @@ body.dashboard-page {
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 
 /* === Chapter List === */
 .chapter-list {
@@ -1036,11 +1060,48 @@ body.dashboard-page {
   gap: 0.75rem;
 }
 
+/* === Chapter Card (merged) === */
+.chapter-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-left: 3px solid var(--accent-orange);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all var(--transition-fast);
+}
+
+.chapter-card:hover {
+  border-color: var(--accent-orange);
+  box-shadow: var(--shadow);
+  background: var(--gray-50);
+}
+
+.chapter-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .chapter-copy span,
 .chapter-copy p {
   font-size: 0.8125rem;
   color: var(--gray-500);
   margin: 0;
+}
+
+.chapter-page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--accent-blue);
+  background: rgba(74, 158, 255, 0.1);
+  border-radius: var(--radius-full);
 }
 
 /* === Forms === */
@@ -1203,8 +1264,11 @@ body.dashboard-page {
   height: 1.05rem;
 }
 
+/* Field grid two-col (merged with separator) */
 .field-grid.two-col {
   grid-template-columns: repeat(2, 1fr);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-100);
 }
 
 .stack-form input,
@@ -1236,7 +1300,6 @@ body.dashboard-page {
 }
 
 /* === Database & User Tables === */
-.database-list,
 .user-list,
 .log-list {
   display: flex;
@@ -1287,6 +1350,39 @@ body.dashboard-page {
   gap: 0.35rem;
   padding: 1rem 1rem 0.75rem;
   flex: 1;
+}
+
+/* Database Title Truncation */
+.db-title-truncate {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Database Status Chip */
+.db-status-chip {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  color: white;
+  margin-top: 0.25rem;
+}
+
+.db-status-chip--completed {
+  background: var(--accent-green);
+}
+
+.db-status-chip--reading {
+  background: var(--accent-blue);
+}
+
+.db-status-chip--to_read {
+  background: var(--accent-orange);
 }
 
 .log-table {
@@ -1428,6 +1524,10 @@ body.reader-page {
 body.reader-header-collapsed .reader-header-restore {
   opacity: 1;
   pointer-events: auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(28, 28, 32, 0.96);
+  animation: subtle-pulse 2s ease-in-out infinite;
 }
 
 body.reader-nav-visible .reader-header {
@@ -1493,6 +1593,13 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.reader-header-subtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+  display: block;
 }
 
 .reader-header-right {
@@ -1655,19 +1762,18 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   color: white;
 }
 
+.reader-right-sidebar .reader-chapter-item.is-active {
+  background: rgba(74, 158, 255, 0.15);
+  border-left: 3px solid var(--accent-blue);
+  font-weight: 600;
+}
+
 .reader-right-sidebar .empty-state {
   border: 1px dashed rgba(255, 255, 255, 0.16);
   border-radius: 0.7rem;
   padding: 0.8rem;
   color: var(--gray-400);
   font-size: 0.875rem;
-}
-
-/* Hide header collapsed */
-.reader-header-collapsed .reader-header {
-  transform: translateY(-100%);
-  opacity: 0;
-  pointer-events: none;
 }
 
 .reader-main {
@@ -1697,6 +1803,11 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   position: relative;
   padding: 0;
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
+  transition: opacity 150ms ease;
+}
+
+.reader-view--transitioning {
+  opacity: 0;
 }
 
 .reader-page-item {
@@ -1764,6 +1875,12 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   transform: none;
 }
 
+.reader-page-counter {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .reader-empty {
   max-width: 520px;
   text-align: center;
@@ -1801,6 +1918,11 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
 
 .reader-tap-zone--right {
   right: 0;
+}
+
+.reader-tap-zone:active {
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 100ms ease;
 }
 
 .reader-sidebar-overlay {
@@ -1849,46 +1971,6 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   font-size: 0.75rem;
   text-align: center;
   padding: 1rem;
-}
-
-/* === Manga Card Active State === */
-.manga-card.is-active {
-  box-shadow: 0 0 0 2px var(--accent-orange), 0 8px 25px rgba(255, 103, 64, 0.2);
-}
-
-/* === Rating Badge on Manga Cards === */
-.manga-card-rating-badge {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: var(--radius-full);
-  color: white;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 2;
-  line-height: 1.4;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-
-/* === Chapter Card === */
-.chapter-card {
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all var(--transition-fast);
-}
-
-.chapter-card:hover {
-  border-color: var(--accent-orange);
-  box-shadow: var(--shadow-sm);
 }
 
 /* === Page Slot Grid (Chapter Upload) === */
@@ -2017,26 +2099,50 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   z-index: 1;
 }
 
-
-/* === Reader Header Subtitle === */
-.reader-header-subtitle {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-top: 2px;
-  display: block;
-}
-
-/* === Reader Chapter Active State === */
-.reader-right-sidebar .reader-chapter-item.is-active {
-  background: rgba(74, 158, 255, 0.15);
-  border-left: 3px solid var(--accent-blue);
+/* === Form Label Improvements === */
+.field-grid > span,
+label.field-grid > span {
   font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.875rem;
 }
 
-/* === Tap Zone Feedback === */
-.reader-tap-zone:active {
-  background: rgba(255, 255, 255, 0.05);
-  transition: background 100ms ease;
+/* === Upload Progress Bar === */
+.upload-progress {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+
+.upload-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+  background-size: 200% 100%;
+  animation: uploadProgressShimmer 1.5s ease infinite;
+  transition: width var(--transition-base);
+}
+
+@keyframes uploadProgressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.upload-progress-text {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--gray-600);
 }
 
 /* === Image Loading Skeleton === */
@@ -2064,33 +2170,10 @@ body.reader-nav-visible.reader-header-collapsed .reader-header {
   max-width: var(--reader-image-max-width);
 }
 
-/* === Reader Page Counter === */
-.reader-page-counter {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
 /* === Header Restore Pulse Animation === */
 @keyframes subtle-pulse {
   0%, 100% { opacity: 0.8; }
   50% { opacity: 1; }
-}
-
-body.reader-header-collapsed .reader-header-restore {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: rgba(28, 28, 32, 0.96);
-  animation: subtle-pulse 2s ease-in-out infinite;
-}
-
-/* === Smooth Page Transition === */
-.reader-view {
-  transition: opacity 150ms ease;
-}
-
-.reader-view--transitioning {
-  opacity: 0;
 }
 
 /* ============================================
@@ -2135,147 +2218,184 @@ body.reader-header-collapsed .reader-header-restore {
   display: block;
 }
 
-/* === Status Badges on Manga Cards === */
-.manga-status-badge {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  border-radius: var(--radius-full);
-  color: white;
-  z-index: 2;
-  line-height: 1.4;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+/* === Chapter Engagement === */
+.chapter-engagement {
+  width: 100%;
+  max-width: min(100%, var(--reader-image-max-width));
+  margin: 1rem auto 0;
+  padding-bottom: 1rem;
 }
 
-.manga-status-badge--completed {
-  background: var(--accent-green);
+.chapter-engagement-inner {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--dark-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
 }
 
-.manga-status-badge--reading {
-  background: var(--accent-blue);
+.chapter-engagement-header h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  color: #fff;
 }
 
-.manga-status-badge--to_read {
-  background: var(--accent-orange);
-}
-
-
-/* === Form Label Improvements === */
-.field-grid > span,
-label.field-grid > span {
-  font-weight: 600;
-  color: var(--gray-700);
+.chapter-engagement-subtitle {
+  margin: 0 0 1rem;
+  color: var(--gray-400);
   font-size: 0.875rem;
 }
 
-/* === Field Group Separator === */
-.field-grid.two-col {
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--gray-100);
+.chapter-rating-block,
+.chapter-reaction-block,
+.chapter-comment-block {
+  margin-bottom: 1.25rem;
 }
 
-/* === Upload Progress Bar === */
-.upload-progress {
-  position: relative;
-  width: 100%;
-  height: 4px;
-  background: var(--gray-200);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-  margin-top: 0.75rem;
+.chapter-rating-block:last-child,
+.chapter-reaction-block:last-child,
+.chapter-comment-block:last-child {
+  margin-bottom: 0;
 }
 
-.upload-progress-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 0%;
-  border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-  background-size: 200% 100%;
-  animation: uploadProgressShimmer 1.5s ease infinite;
-  transition: width var(--transition-base);
+.chapter-rating-block h3,
+.chapter-reaction-block h3,
+.chapter-comment-block h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--gray-200);
 }
 
-@keyframes uploadProgressShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.upload-progress-text {
-  position: absolute;
-  top: 8px;
-  right: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--gray-600);
-}
-
-/* === Chapter Card Enhancements === */
-.chapter-card {
-  border-left: 3px solid var(--accent-orange);
-  padding: 1rem 1.25rem;
-}
-
-.chapter-card:hover {
-  border-color: var(--accent-orange);
-  box-shadow: var(--shadow);
-  background: var(--gray-50);
-}
-
-.chapter-copy {
+.chapter-rating-stars {
   display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.chapter-rating-star {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.chapter-rating-star:hover,
+.chapter-rating-star.is-active {
+  color: #fbbf24;
+  transform: scale(1.05);
+}
+
+.chapter-rating-summary {
+  margin: 0;
+  color: var(--gray-400);
+  font-size: 0.875rem;
+}
+
+.chapter-reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chapter-reaction-button {
+  display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--dark-border);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--gray-200);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.chapter-reaction-button:hover,
+.chapter-reaction-button.is-active {
+  border-color: var(--accent-orange);
+  background: rgba(249, 115, 22, 0.12);
+}
+
+.chapter-reaction-emoji {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.chapter-reaction-count {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.chapter-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.chapter-comment-input {
+  width: 100%;
+  min-height: 5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--dark-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--gray-100);
+  resize: vertical;
+}
+
+.chapter-comment-input:focus {
+  outline: none;
+  border-color: var(--accent-orange);
+}
+
+.chapter-comment-list {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
-.chapter-page-badge {
-  display: inline-flex;
+.chapter-comment-empty {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.875rem;
+}
+
+.chapter-comment-item {
+  padding: 0.875rem;
+  border: 1px solid var(--dark-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chapter-comment-meta {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--accent-blue);
-  background: rgba(74, 158, 255, 0.1);
-  border-radius: var(--radius-full);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
-/* === Database Title Truncation === */
-.db-title-truncate {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.chapter-comment-meta strong {
+  color: var(--gray-100);
+  font-size: 0.875rem;
 }
 
-/* === Database Status Chip === */
-.db-status-chip {
-  display: inline-block;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  border-radius: var(--radius-full);
-  color: white;
-  margin-top: 0.25rem;
+.chapter-comment-meta time {
+  color: var(--gray-500);
+  font-size: 0.75rem;
 }
 
-.db-status-chip--completed {
-  background: var(--accent-green);
-}
-
-.db-status-chip--reading {
-  background: var(--accent-blue);
-}
-
-.db-status-chip--to_read {
-  background: var(--accent-orange);
+.chapter-comment-body {
+  margin: 0 0 0.75rem;
+  color: var(--gray-300);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ============================================
@@ -2857,207 +2977,4 @@ label.field-grid > span {
     font-size: 0.6875rem;
     padding: 0.25rem 0.5rem;
   }
-}
-
-/* === Manga Rating Badge === */
-.manga-rating-badge {
-  position: absolute;
-  left: 0.5rem;
-  bottom: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(15, 15, 20, 0.82);
-  border-radius: var(--radius-full);
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-.manga-rating-badge .bi-star-fill {
-  color: #fbbf24;
-  font-size: 0.8125rem;
-}
-
-/* === Chapter Engagement === */
-.chapter-engagement {
-  width: 100%;
-  max-width: min(100%, var(--reader-image-max-width));
-  margin: 1rem auto 0;
-  padding-bottom: 1rem;
-}
-
-.chapter-engagement-inner {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--dark-border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-}
-
-.chapter-engagement-header h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.125rem;
-  color: #fff;
-}
-
-.chapter-engagement-subtitle {
-  margin: 0 0 1rem;
-  color: var(--gray-400);
-  font-size: 0.875rem;
-}
-
-.chapter-rating-block,
-.chapter-reaction-block,
-.chapter-comment-block {
-  margin-bottom: 1.25rem;
-}
-
-.chapter-rating-block:last-child,
-.chapter-reaction-block:last-child,
-.chapter-comment-block:last-child {
-  margin-bottom: 0;
-}
-
-.chapter-rating-block h3,
-.chapter-reaction-block h3,
-.chapter-comment-block h3 {
-  margin: 0 0 0.75rem;
-  font-size: 0.9375rem;
-  color: var(--gray-200);
-}
-
-.chapter-rating-stars {
-  display: flex;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-}
-
-.chapter-rating-star {
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  font-size: 1.5rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
-  transition: color var(--transition-fast), transform var(--transition-fast);
-}
-
-.chapter-rating-star:hover,
-.chapter-rating-star.is-active {
-  color: #fbbf24;
-  transform: scale(1.05);
-}
-
-.chapter-rating-summary {
-  margin: 0;
-  color: var(--gray-400);
-  font-size: 0.875rem;
-}
-
-.chapter-reaction-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.chapter-reaction-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid var(--dark-border);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--gray-200);
-  cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.chapter-reaction-button:hover,
-.chapter-reaction-button.is-active {
-  border-color: var(--accent-orange);
-  background: rgba(249, 115, 22, 0.12);
-}
-
-.chapter-reaction-emoji {
-  font-size: 1.125rem;
-  line-height: 1;
-}
-
-.chapter-reaction-count {
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.chapter-comment-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.chapter-comment-input {
-  width: 100%;
-  min-height: 5rem;
-  padding: 0.75rem;
-  border: 1px solid var(--dark-border);
-  border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--gray-100);
-  resize: vertical;
-}
-
-.chapter-comment-input:focus {
-  outline: none;
-  border-color: var(--accent-orange);
-}
-
-.chapter-comment-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.chapter-comment-empty {
-  margin: 0;
-  color: var(--gray-500);
-  font-size: 0.875rem;
-}
-
-.chapter-comment-item {
-  padding: 0.875rem;
-  border: 1px solid var(--dark-border);
-  border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.chapter-comment-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.chapter-comment-meta strong {
-  color: var(--gray-100);
-  font-size: 0.875rem;
-}
-
-.chapter-comment-meta time {
-  color: var(--gray-500);
-  font-size: 0.75rem;
-}
-
-.chapter-comment-body {
-  margin: 0 0 0.75rem;
-  color: var(--gray-300);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
 }

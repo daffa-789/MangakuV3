@@ -60,20 +60,6 @@
     return parsed;
   }
 
-  function normalizeOptionalInteger(value) {
-    if (value === undefined || value === null || value === "") {
-      return null;
-    }
-
-    const parsed = Number(value);
-
-    if (!Number.isInteger(parsed)) {
-      return Number.NaN;
-    }
-
-    return parsed;
-  }
-
   function normalizePositiveInteger(value) {
     if (value === undefined || value === null || value === "") {
       return Number.NaN;
@@ -157,23 +143,6 @@
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
-  }
-
-  function formatDuration(seconds) {
-    const safeSeconds = Math.max(0, Number(seconds || 0));
-    const hours = Math.floor(safeSeconds / 3600);
-    const minutes = Math.floor((safeSeconds % 3600) / 60);
-    const remainingSeconds = safeSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}j ${minutes}m`;
-    }
-
-    if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`;
-    }
-
-    return `${remainingSeconds}s`;
   }
 
   async function parseJsonResponse(response) {
@@ -308,13 +277,11 @@
     setSession,
     clearSession,
     parsePositiveInteger,
-    normalizeOptionalInteger,
     normalizePositiveInteger,
     escapeHtml,
     renderImageWithFallback,
     formatDate,
     formatDateTime,
-    formatDuration,
     parseJsonResponse,
     buildAuthHeaders,
     showFeedback,

@@ -60,9 +60,7 @@ function redirectToLogin() {
   window.location.replace("/login.html");
 }
 
-function escapeHtml(value) {
-  return window.MangakuCore.escapeHtml(value);
-}
+const { escapeHtml } = window.MangakuCore;
 
 function parseReaderPath(pathname) {
   const legacyMatch = String(pathname || "").match(
