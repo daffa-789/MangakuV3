@@ -67,14 +67,14 @@ function getRoleLabel(role) {
 
 function getAllowedTabs() {
   if (isSuperAdminUser()) {
-    return ["overview", "add-manga", "edit-manga", "database", "users", "logs"];
+    return ["overview", "add-manga", "edit-manga", "database", "users", "logs", "profile"];
   }
 
   if (isAdminUser()) {
-    return ["overview", "add-manga", "edit-manga", "database"];
+    return ["overview", "add-manga", "edit-manga", "database", "profile"];
   }
 
-  return ["overview", "favorites"];
+  return ["overview", "favorites", "profile"];
 }
 
 function getDefaultTab() {
@@ -504,6 +504,15 @@ function buildMangaCardActions(book, options = {}) {
     detailUrl
       ? `<a class="primary-button small" href="${detailUrl}">Baca</a>`
       : `<button type="button" class="secondary-button small" disabled>Belum Ada Chapter</button>`,
+    `<button
+      type="button"
+      class="secondary-button small"
+      data-action="toggle-favorite"
+      data-book-id="${book.id}"
+      data-next-favorite="${book.isFavorite ? "false" : "true"}"
+      title="${book.isFavorite ? "Hapus dari Favorit" : "Tambah ke Favorit"}">
+      <i class="bi bi-heart${book.isFavorite ? "-fill" : ""}" aria-hidden="true"></i>
+    </button>`,
   ];
 
   if (options.showManageActions && canManageCatalog()) {
@@ -1137,6 +1146,49 @@ async function refreshDashboard(options = {}) {
   renderAll();
 }
 
+function renderProfileForm() {
+  const user = state.currentUser;
+  if (!user) return;
+
+  const emailEl = document.getElementById("profileEmail");
+  const roleEl = document.getElementById("profileRole");
+  const usernameEl = document.getElementById("profileUsername");
+  const displayNameEl = document.getElementById("profileDisplayName");
+  const birthdayEl = document.getElementById("profileBirthday");
+  const bioEl = document.getElementById("profileBio");
+
+  if (emailEl) emailEl.value = user.email || "";
+  if (roleEl) roleEl.value = getRoleLabel(user.role);
+  if (usernameEl) usernameEl.value = user.username || "";
+  if (displayNameEl) displayNameEl.value = user.displayName || "";
+  if (birthdayEl) birthdayEl.value = user.birthday || "";
+  if (bioEl) bioEl.value = user.bio || "";
+}
+
+async function handleProfileSave() {
+  const user = state.currentUser;
+  if (!user) return;
+
+  const payload = {
+    username: String(document.getElementById("profileUsername")?.value || "").trim(),
+    displayName: String(document.getElementById("profileDisplayName")?.value || "").trim(),
+    birthday: String(document.getElementById("profileBirthday")?.value || "").trim() || null,
+    bio: String(document.getElementById("profileBio")?.value || "").trim(),
+  };
+
+  try {
+    const result = await requestJson("PATCH", "/api/auth/profile", payload);
+    if (result.data) {
+      Object.assign(user, result.data);
+      window.MangakuSession.setCurrentUserSession(user);
+      hydrateCurrentUserIdentity();
+    }
+    showFeedback("Profil berhasil diperbarui.", "success");
+  } catch (error) {
+    showFeedback(error.message || "Gagal memperbarui profil.", "error");
+  }
+}
+
 function renderAll() {
   renderCatalogCount();
   renderMangaGrid("libraryGrid", state.books, {
@@ -1150,6 +1202,7 @@ function renderAll() {
   renderDatabaseList();
   renderUserRoleList();
   renderActivityLogs();
+  renderProfileForm();
   prepareChapterForm(state.selectedBookDetail);
 }
 
@@ -1606,6 +1659,16 @@ function attachForms() {
     ?.addEventListener("click", () => {
       prepareChapterForm(state.selectedBookDetail);
       showFeedback("Edit chapter dibatalkan.", "info");
+    });
+
+  document
+    .getElementById("profileSaveButton")
+    ?.addEventListener("click", handleProfileSave);
+
+  document
+    .getElementById("profileOkButton")
+    ?.addEventListener("click", () => {
+      setActiveTab("overview");
     });
 }
 

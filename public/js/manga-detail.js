@@ -27,12 +27,6 @@ function parseSlugFromPath() {
 }
 
 
-function renderTopbarTitle(book) {
-  const el = document.getElementById("mangaDetailTopbarTitle");
-  if (el && book?.title) {
-    el.textContent = book.title;
-  }
-}
 
 function renderDetail(book) {
   const container = document.getElementById("mangaDetailContent");
@@ -164,7 +158,6 @@ function renderDetail(book) {
     </section>
   `;
 
-  renderTopbarTitle(book);
   attachFavoriteButton();
   attachSynopsisToggle();
 }
@@ -190,7 +183,7 @@ function attachFavoriteButton() {
 
     try {
       await window.MangakuApi.post(`/api/books/${bookId}/favorite`, {
-        favorite: !isFavorite,
+        isFavorite: !isFavorite,
       });
 
       state.book.isFavorite = !isFavorite;

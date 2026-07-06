@@ -99,6 +99,14 @@
             <span>Activity Logs</span>
           </button>
 
+          <button
+            class="nav-button"
+            data-nav-target="profile"
+            type="button">
+            <i class="bi bi-person-circle"></i>
+            <span>Profil</span>
+          </button>
+
           <button id="logoutButton" class="nav-button nav-danger" type="button">
             <i class="bi bi-box-arrow-right"></i>
             <span>Logout</span>
@@ -471,6 +479,53 @@
               </div>
             </div>
             <div id="userRoleList" class="user-list"></div>
+          </article>
+        </section>
+
+        <section id="tab-profile" class="tab-panel">
+          <article class="card form-card">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Akun</p>
+                <h3>Pengaturan Profil</h3>
+              </div>
+            </div>
+            <div class="stack-form">
+              <div class="field-grid two-col">
+                <label class="field-grid">
+                  <span>Email</span>
+                  <input id="profileEmail" type="email" readonly />
+                </label>
+                <label class="field-grid">
+                  <span>Role</span>
+                  <input id="profileRole" type="text" readonly />
+                </label>
+              </div>
+              <div class="field-grid two-col">
+                <label class="field-grid">
+                  <span>Username</span>
+                  <input id="profileUsername" type="text" placeholder="Username opsional" />
+                </label>
+                <label class="field-grid">
+                  <span>Nama Tampilan</span>
+                  <input id="profileDisplayName" type="text" placeholder="Nama tampilan opsional" />
+                </label>
+              </div>
+              <div class="field-grid two-col">
+                <label class="field-grid">
+                  <span>Tanggal Lahir</span>
+                  <input id="profileBirthday" type="date" />
+                </label>
+                <label class="field-grid">
+                  <span>Bio</span>
+                  <input id="profileBio" type="text" placeholder="Bio singkat" />
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="button" id="profileSaveButton" class="primary-button">Simpan</button>
+                <button type="button" id="profileOkButton" class="secondary-button">OK</button>
+              </div>
+            </div>
           </article>
         </section>
 
